@@ -1,8 +1,6 @@
 import 'dart:io';
+import 'dart:math';
 
-// Braucht außerdem noch Kennzeichnung "cuisine", category (also "main course", "side dish" usw.) // Braucht außerdem noch Kennzeichnung "cuisine", category (also "main course", "side dish" usw.) 
-// category und cuisune könnten mithilfe von tags hinzugefügt werden, damit bei showAllRecipes die entsprechenden Rezepte herausgefiltert werden
-// aber alles kein Muss. Alternative --> randomizer, gib bei "recommendations" einfach ein zufälliges Rezept aus
 Map chickenWings = {
     "title" : "Sesame Chicken Wings",
     "difficulty" : "Not too tricky",
@@ -44,7 +42,8 @@ void main(List<String> args) {
       case "1":
         recipeSubMenu();
       case "2":  
-        recommendationsSubMenu();
+        print("\nHow about this recipe for today?");
+        recipeRandomizer();
       case "3":
         shoppingListSubMenu();
       case "x":
@@ -68,12 +67,12 @@ void recipeSubMenu() {
     String userInput = stdin.readLineSync()!;
     switch (userInput) {
       case "1":
-        recipesOverview();
+        showAllRecipes();
+        if(allRecipes.isNotEmpty) showRecipeDetailsMenu();
       case "2":  
         addRecipe();
       case "3":
-        showAllRecipes();
-        print("Showing a list of recipe titles to choose from for deletion...");
+        deleteRecipe();
       case "x":
         print("Terminating function call...\n");  
         return;
@@ -118,16 +117,18 @@ void shoppingListSubMenu() {
 }
 
 void showAllRecipes() {
-  print("\n======== YOUR RECIPES ========");
-  for (var i = 0; i < allRecipes.length; i++) {
-    print("${[i+1]} ${allRecipes[i]["title"]}");
+  if(allRecipes.isEmpty) {
+    print("There are no recipes in your cookbook. Go and add some!");
+  } else {
+    print("\n======== YOUR RECIPES ========");
+    for (var i = 0; i < allRecipes.length; i++) {
+      print("${[i+1]} ${allRecipes[i]["title"]}");
+    }
   }
 }
 
-// hier könnte außerdem geschaut werden, welche verschiedenen Kategorien es in allRecipes gibt und demnach sortiert werden
-void recipesOverview() {
+void showRecipeDetailsMenu() {
   while(true) {
-    showAllRecipes();
     print("[x] Go back to recipe submenu\n");
 
     stdout.write("Please select a recipe: ");
@@ -136,35 +137,35 @@ void recipesOverview() {
     if(userInput.toLowerCase() == 'x') {
       return;
     }
-    int? userInputAsInt = int.tryParse(userInput);
+    int? recipeIndex = int.tryParse(userInput);
 
     // War Umwandlung von string zu integer erfolgreich? --> ziehe 1 vom input ab, um zur Zählweise 0...i zurückzukommen
-    if(userInputAsInt != null && userInputAsInt - 1 >= 0 && userInputAsInt - 1 < allRecipes.length) {
-      userInputAsInt--;
-      showRecipeDetails(allRecipes[userInputAsInt]);
+    if(recipeIndex != null && recipeIndex - 1 >= 0 && recipeIndex - 1 < allRecipes.length) {
+      recipeIndex--;
+      showRecipeDetails(recipeIndex);
     } else {
       print("Invalid input, please try again.");
     } 
+    showAllRecipes();
   }
 }
 
-void showRecipeDetails(Map recipe) {
+void showRecipeDetails(int recipeIndex) {
   print("-------------------------");
-  print("Title: ${recipe["title"]}");
-  print("Difficulty: ${recipe["difficulty"]}");
-  print("Prep time: ${recipe["preptime"]}");
+  print("Title: ${allRecipes[recipeIndex]["title"]}");
+  print("Difficulty: ${allRecipes[recipeIndex]["difficulty"]}");
+  print("Prep time: ${allRecipes[recipeIndex]["preptime"]}");
   print("\nDirections:");
-  for (var i = 0; i < recipe["directions"].length; i++) {
-    print("${i + 1}. ${recipe["directions"][i]}");
+  for (var i = 0; i < allRecipes[recipeIndex]["directions"].length; i++) {
+    print("${i + 1}. ${allRecipes[recipeIndex]["directions"][i]}");
   }
   print("\nIngredients:");
-  for (var i = 0; i < recipe["ingredients"].length; i++) {
-    print("${i + 1}. ${recipe["ingredients"][i]}");
+  for (var i = 0; i < allRecipes[recipeIndex]["ingredients"].length; i++) {
+    print("${i + 1}. ${allRecipes[recipeIndex]["ingredients"][i]}");
   }
 }
 
 // Fragt den Nutzer nach einem Titel, Schwierigkeitsgrad, Zubereitungszeit insgesamt und nach einzelnen Zubereitungsschritten
-// Braucht außerdem noch Kennzeichnung "cuisine", category (also "main course", "side dish" usw.) 
 // Daten werden in einer Map gespeichert
 // Fertige Map wird am Ende allRecipes list hinzugefügt 
 void addRecipe() {
@@ -192,6 +193,40 @@ void addRecipe() {
   print("\n==> $titleInput was added to your recipe list");
 }
 
+void deleteRecipe() {
+  if(allRecipes.isEmpty) {
+    print("There are no recipes in your cookbook. Go and add some!");
+  } else {
+    while(true) {
+      showAllRecipes();
+      print("[x] Go back to recipe submenu\n");
+
+      stdout.write("Please select the recipe you want to delete: ");
+      String userInput = stdin.readLineSync()!;
+
+      if(userInput.toLowerCase() == 'x') {
+        return;
+      }
+      int? recipeIndex = int.tryParse(userInput);
+
+      // War Umwandlung von string zu integer erfolgreich? --> ziehe 1 vom input ab, um zur Zählweise 0...i zurückzukommen
+      if(recipeIndex != null && recipeIndex - 1 >= 0 && recipeIndex - 1 < allRecipes.length) {
+        recipeIndex--;
+        
+        String recipeName = allRecipes[recipeIndex]["title"];
+        allRecipes.removeAt(recipeIndex);
+        print("\n==> $recipeName was removed from recipes.");
+        if(allRecipes.isEmpty) {
+          print("\nThere are no recipes left in your cookbook.");
+          return;
+        }
+      } else {
+        print("Invalid input, please try again.");
+      } 
+    }
+  }
+}
+
 List<String> createList({int counterStart = 1}) {
   List<String> userInput = [];
   int stepCounter = counterStart;
@@ -207,43 +242,6 @@ List<String> createList({int counterStart = 1}) {
     }
   }
 }
-
-// void showAllShoppingLists() {
-//   int shoppingListsCounter = 1;
-//   print("\n======== ALL SHOPPING LISTS ========");
-//   for (var shoppingList in allShoppingLists.keys) {
-//     print("[$shoppingListsCounter] ${shoppingList}");
-//     shoppingListsCounter++;
-//   }
-// }
-
-// void shoppingListsOverview() {
-//   while(true) {
-//     showAllShoppingLists();    
-//     print("[x] Go back to shopping list submenu\n");
-
-//     stdout.write("Please select a shopping list: ");
-//     String userInput = stdin.readLineSync()!;
-
-//     if(userInput.toLowerCase() == 'x') {
-//       return;
-//     }
-//     int? userInputAsInt = int.tryParse(userInput);
-
-//     // War Umwandlung von string zu integer erfolgreich? --> ziehe 1 vom input ab, um zur Zählweise 0...i zurückzukommen
-//     if(userInputAsInt != null && userInputAsInt - 1 >= 0 && userInputAsInt - 1 < allShoppingLists.keys.length) {
-//       userInputAsInt--;
-//       List<String> keysAsList = allShoppingLists.keys.toList();
-//       String? key = keysAsList[userInputAsInt];
-      
-//       List<String> shoppingList = allShoppingLists[key]!;
-//       showShoppingListDetails(key, shoppingList);
-  
-//     } else {
-//       print("Invalid input, please try again.");
-//     }       
-//   }
-// }
 
 void showShoppingList() {
   if(shoppingList.isEmpty) {
@@ -269,7 +267,7 @@ void addToShoppingList() {
 void deleteFromShoppingList() {
   while(true) {
     showShoppingList();
-    print("[x] Go back to recipe submenu\n");
+    print("[x] Go back to shopping list submenu\n");
 
     stdout.write("Please select the item you want to delete: ");
     String userInput = stdin.readLineSync()!;
@@ -277,14 +275,14 @@ void deleteFromShoppingList() {
     if(userInput.toLowerCase() == 'x') {
       return;
     }
-    int? userInputAsInt = int.tryParse(userInput);
+    int? shoppingItemIndex = int.tryParse(userInput);
 
     // War Umwandlung von string zu integer erfolgreich? --> ziehe 1 vom input ab, um zur Zählweise 0...i zurückzukommen
-    if(userInputAsInt != null && userInputAsInt - 1 >= 0 && userInputAsInt - 1 < shoppingList.length) {
-      userInputAsInt--;
-      String itemName = shoppingList[userInputAsInt];
-      shoppingList.removeAt(userInputAsInt);
-      print("$itemName was removed from shopping list");
+    if(shoppingItemIndex != null && shoppingItemIndex - 1 >= 0 && shoppingItemIndex - 1 < shoppingList.length) {
+      shoppingItemIndex--;
+      String itemName = shoppingList[shoppingItemIndex];
+      shoppingList.removeAt(shoppingItemIndex);
+      print("\n==> $itemName was removed from shopping list");
       if(shoppingList.isEmpty) {
         print("\nThere is nothing on the shopping list anymore.");
         return;
@@ -293,4 +291,10 @@ void deleteFromShoppingList() {
       print("Invalid input, please try again.");
     } 
   }
+}
+
+void recipeRandomizer() {
+  Random random = new Random();
+  int randomNum = random.nextInt(allRecipes.length);
+  showRecipeDetails(randomNum);
 }
